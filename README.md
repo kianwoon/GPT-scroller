@@ -2,7 +2,9 @@
 
 [![Release](https://img.shields.io/github/v/release/kianwoon/GPT-scroller?style=flat-square&color=blue)](https://github.com/kianwoon/GPT-scroller/releases) [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)]() [![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=flat-square)]() [![No Dependencies](https://img.shields.io/badge/dependencies-0-green?style=flat-square)]() [![Browser](https://img.shields.io/badge/browser-Brave/Chrome-informational?style=flat-square)]()
 
-A browser extension that fixes scroll behavior on AI chat sites. Positions your message 20% above the bottom of the viewport when you send it, instead of letting the site snap to the very bottom.
+When you use AI chatbots daily for work and personal tasks, every time you send a new message the page snaps to the very bottom. The AI response you were reading flies off the top of the screen, and you have to scroll back up to find where you left off. This happens dozens of times a day and becomes a constant source of friction.
+
+This extension fixes that. When you send a new message, it positions it at 20% above the input box, keeping the tail of the previous AI response visible above it. No more losing context. No more scrolling up after every send.
 
 ## Features
 
@@ -12,6 +14,20 @@ A browser extension that fixes scroll behavior on AI chat sites. Positions your 
 - Handles SPA navigation seamlessly (ChatGPT, Gemini) and full page loads (Grok)
 - Zero dependencies -- vanilla JavaScript, Manifest V3
 - Optimized for Brave browser; works in Chromium-based browsers
+
+## The Problem
+
+- ChatGPT, Gemini, and Grok all auto-scroll to the absolute bottom when you send a message
+- Your previous context disappears off-screen, forcing manual scroll-up every time
+- This friction repeats dozens of times per day across multiple AI tools
+- It breaks your reading flow and kills productivity
+
+## The Solution
+
+- New messages anchor at 20% above the input box — always visible, always in context
+- The previous AI response stays visible directly above the new message
+- No gap, no lost context, no manual scrolling
+- Works across ChatGPT, Gemini, and Grok — one extension for all your AI tools
 
 ## Supported Sites
 
@@ -30,12 +46,6 @@ A browser extension that fixes scroll behavior on AI chat sites. Positions your 
 5. Click **Load unpacked** and select the extracted folder
 
 The extension will take effect immediately on [supported sites](#supported-sites).
-
-## How It Works
-
-Most AI chat interfaces auto-scroll to the absolute bottom of the page when you send a message or when the AI starts streaming its response. This forces your eyes to the bottom edge of the screen, which is awkward and wastes the lower 20% of your viewport.
-
-This extension overrides that behavior. When you send a message, it calculates 80% of the viewport height and scrolls so your message sits at that position. During streaming, it repeatedly locks the scroll to prevent the site from overriding. If you scroll up intentionally, the lock disengages so you can read earlier parts of the conversation without fighting the page.
 
 ## Tech Stack
 
