@@ -75,15 +75,27 @@ function positionAndLock() {
     // Get content offset via getBoundingClientRect (reliable, no offsetTop chain)
     const offset = msg.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
 
+    // Gap-close: ensure previous AI response remains visible above the new message
+    let minScroll = 0;
+    const prevTurn = lastTurn.previousElementSibling;
+    if (prevTurn) {
+        const prevBubble = prevTurn.querySelector('.message-bubble');
+        if (prevBubble) {
+            const prevOffset = prevBubble.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
+            minScroll = prevOffset - 8;
+        }
+    }
+
     const max = scrollBox.scrollHeight - scrollBox.clientHeight;
     const target = Math.min(Math.max(0, offset - scrollBox.clientHeight * VIEWPORT_RATIO), max);
-    log('msgOffset:', Math.round(offset), 'target:', Math.round(target), 'max:', Math.round(max));
+    const clampedTarget = Math.max(target, minScroll);
+    log('msgOffset:', Math.round(offset), 'target:', Math.round(target), 'minScroll:', Math.round(minScroll), 'clamped:', Math.round(clampedTarget), 'max:', Math.round(max));
 
     scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
-    scrollBox.scrollTop = target;
+    scrollBox.scrollTop = clampedTarget;
     scrollBox.style.removeProperty('scroll-behavior');
     lastProgrammaticScroll = performance.now();
-    startHold(target);
+    startHold(clampedTarget);
 }
 
 // ── Manual scroll detection ───────────────────────────────────────────────────

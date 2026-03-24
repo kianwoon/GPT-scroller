@@ -74,8 +74,18 @@ function positionNewMessage() {
     const offset = msg.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
 
     const target = offset - scrollBox.clientHeight * VIEWPORT_RATIO;
-    log('positioning: msgOffset=', Math.round(offset), 'target=', Math.round(target));
-    scrollTo(target);
+
+    // Gap-close: find previous AI response to prevent gap between it and new message
+    let minScroll = 0;
+    const prevResponse = msg.previousElementSibling;
+    if (prevResponse) {
+        const prevOffset = prevResponse.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
+        minScroll = prevOffset - 8; // 8px padding from viewport top
+    }
+
+    const finalTarget = Math.max(target, minScroll);
+    log('positioning: msgOffset=', Math.round(offset), 'target=', Math.round(target), 'minScroll=', Math.round(minScroll), 'final=', Math.round(finalTarget));
+    scrollTo(finalTarget);
     locked = true;
     log('scroll locked');
 }
