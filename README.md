@@ -4,13 +4,14 @@
 
 When you use AI chatbots daily for work and personal tasks, every time you send a new message it jumps to the top of the page, pushing your previous context off-screen. The AI response you were reading disappears, and you have to scroll back up to find where you left off. This happens dozens of times a day and becomes a constant source of friction.
 
-This extension fixes that. When you send a new message, it positions it at 20% above the input box, keeping the tail of the previous AI response visible above it. No more losing context. No more scrolling up after every send.
+This extension fixes that. When you send a new message, it positions it at 20% above the input box, keeping the tail of the previous AI response visible above it. It also blocks auto-scroll during AI streaming, so you can read your context without the page jumping around on you. No more losing context. No more scrolling up after every send.
 
 ## Features
 
 - Positions user messages at 80% viewport height (20% above the bottom edge)
 - Locks scroll position during AI streaming to prevent auto-scroll-to-bottom
 - Scroll up at any time to unlock and browse freely through the conversation
+- Blocks auto-scroll during AI streaming — read your context without the page jumping around
 - Handles SPA navigation seamlessly (ChatGPT, Gemini) and full page loads (Grok)
 - Zero dependencies -- vanilla JavaScript, Manifest V3
 - Optimized for Brave browser; works in Chromium-based browsers
@@ -25,7 +26,8 @@ This extension fixes that. When you send a new message, it positions it at 20% a
 ## The Solution
 
 - New messages anchor at 20% above the input box — always visible, always in context
-- The previous AI response stays visible directly above the new message
+- Auto-scroll during streaming is blocked — your reading position stays put while the AI responds
+- Scroll up at any time to unlock and browse freely; the lock re-engages once you're back near the bottom
 - No gap, no lost context, no manual scrolling
 - Works across ChatGPT, Gemini, and Grok — one extension for all your AI tools
 
