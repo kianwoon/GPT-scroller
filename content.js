@@ -12,6 +12,11 @@ let currentCycleLocked = false;
 let stopObserver = null;
 let inputAttachObserver = null;
 let scrollBoxObserver = null;
+let holdId = null;
+let lockedTarget = 0;
+let lastProgrammaticScroll = 0;
+let scrollHandler = null;
+let lastScrollTop = 0;
 
 const SEND_GAP_PX = 120; // unused, kept for reference
 const WAIT_FOR_MSG_MS = 6000;
@@ -109,6 +114,26 @@ function setScrollTop(target, reason = '') {
   log(`setScrollTop → ${Math.round(clamped)} (target:${Math.round(target)} max:${Math.round(max)}) [${reason}]`);
 }
 
+function startHold(target) {
+  stopHold();
+  lockedTarget = target;
+  holdId = setInterval(() => {
+    if (!scrollBox) return;
+    if (Math.abs(scrollBox.scrollTop - lockedTarget) > 2) {
+      scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
+      scrollBox.scrollTop = lockedTarget;
+      scrollBox.style.removeProperty('scroll-behavior');
+      lastProgrammaticScroll = performance.now();
+    }
+  }, 100);
+  log('hold started at', Math.round(target));
+}
+
+function stopHold() {
+  if (holdId) { clearInterval(holdId); holdId = null; }
+  log('hold stopped');
+}
+
 // ── Positioning ───────────────────────────────────────────────────────────────
 function getMsgContentOffset(msg) {
   const msgRect = msg.getBoundingClientRect();
@@ -139,6 +164,7 @@ function positionAfterSend() {
 
   log(`positionAfterSend: msgOffset=${Math.round(msgContentOffset)} target=${Math.round(target)} minScroll=${Math.round(minScroll)} final=${Math.round(finalTarget)}`);
   setScrollTop(finalTarget, 'after-send');
+  startHold(finalTarget);
 }
 
 function positionWhenStreamingStarts() {
@@ -165,6 +191,7 @@ function setupStopObserver() {
     }
     if (!streaming && wasStreaming) {
       wasStreaming = false;
+      stopHold();
       log('Streaming ended');
     }
   });
@@ -271,6 +298,7 @@ setInterval(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href;
     log('Navigation detected, rebinding scrollBox...');
+    stopHold();
     scrollBox = null;
     cachedScrollBox = null;
     stopObserver?.disconnect();
@@ -280,6 +308,21 @@ setInterval(() => {
     if (oldTextarea) oldTextarea.removeAttribute('data-sf-key');
     waitForScrollBox((el) => {
       scrollBox = el;
+      // User scroll detection — release hold when user scrolls up
+      if (scrollBox && scrollHandler) {
+        scrollBox.removeEventListener('scroll', scrollHandler);
+      }
+      lastScrollTop = scrollBox.scrollTop;
+      scrollHandler = () => {
+        const cur = scrollBox.scrollTop;
+        const delta = cur - lastScrollTop;
+        lastScrollTop = cur;
+        if (holdId && performance.now() - lastProgrammaticScroll > 100 && delta < -10) {
+          stopHold();
+          log('user scrolled up — hold released');
+        }
+      };
+      scrollBox.addEventListener('scroll', scrollHandler, { passive: true });
       setupStopObserver();
       setupInputListener();
       log('Rebound after navigation, scrollBox overflow:', el.scrollHeight - el.clientHeight);
@@ -291,6 +334,21 @@ setInterval(() => {
 function init() {
   waitForScrollBox((el) => {
     scrollBox = el;
+    // User scroll detection — release hold when user scrolls up
+    if (scrollBox && scrollHandler) {
+      scrollBox.removeEventListener('scroll', scrollHandler);
+    }
+    lastScrollTop = scrollBox.scrollTop;
+    scrollHandler = () => {
+      const cur = scrollBox.scrollTop;
+      const delta = cur - lastScrollTop;
+      lastScrollTop = cur;
+      if (holdId && performance.now() - lastProgrammaticScroll > 100 && delta < -10) {
+        stopHold();
+        log('user scrolled up — hold released');
+      }
+    };
+    scrollBox.addEventListener('scroll', scrollHandler, { passive: true });
     setupStopObserver();
     setupInputListener();
     log('Init complete, scrollBox overflow:', el.scrollHeight - el.clientHeight);

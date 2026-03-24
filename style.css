@@ -1,3 +1,9 @@
+/* Prevent browser scroll anchoring during streaming */
+[class*="react-scroll-to-bottom"] > div > div,
+[class*="react-scroll-to-bottom"] > div > div * {
+    overflow-anchor: none !important;
+}
+
 /* This adds the 20% gap at the very end of the chat stream */
 /* NOTE: Selectors below are based on ChatGPT's class names as of early 2026.
    If the extension stops adding bottom padding, these selectors may need updating

@@ -9,6 +9,9 @@ let scrollBox = null;
 let cachedScrollBox = null;
 let locked = false;
 let logCount = 0;
+let holdId = null;
+let lockedTarget = 0;
+let lastProgrammaticScroll = 0;
 
 function log(...a) { console.log(`[GeminiScrollFix ${logCount++}]`, ...a); }
 
@@ -64,6 +67,27 @@ function scrollTo(pos) {
     log('scrollTop set to', Math.round(scrollBox.scrollTop));
 }
 
+// ── Active scroll hold during streaming ──────────────────────────────────────
+function startHold(target) {
+    stopHold();
+    lockedTarget = target;
+    holdId = setInterval(() => {
+        if (!scrollBox) return;
+        if (Math.abs(scrollBox.scrollTop - lockedTarget) > 2) {
+            scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
+            scrollBox.scrollTop = lockedTarget;
+            scrollBox.style.removeProperty('scroll-behavior');
+            lastProgrammaticScroll = performance.now();
+        }
+    }, 100);
+    log('hold started at', Math.round(target));
+}
+
+function stopHold() {
+    if (holdId) { clearInterval(holdId); holdId = null; }
+    log('hold stopped');
+}
+
 // ── Position new message 20% above bottom ────────────────────────────────────
 function positionNewMessage() {
     const msgs = document.querySelectorAll('user-query');
@@ -87,6 +111,7 @@ function positionNewMessage() {
     log('positioning: msgOffset=', Math.round(offset), 'target=', Math.round(target), 'minScroll=', Math.round(minScroll), 'final=', Math.round(finalTarget));
     scrollTo(finalTarget);
     locked = true;
+    startHold(finalTarget);
     log('scroll locked');
 }
 
@@ -100,9 +125,10 @@ function setupScrollDetection() {
         const cur = scrollBox.scrollTop;
         const delta = cur - lastTop;
         lastTop = cur;
-        if (locked && delta < -10) {
+        if (locked && performance.now() - lastProgrammaticScroll > 100 && delta < -10) {
             locked = false;
-            log('user scrolled up — unlocked');
+            stopHold();
+            log('user scrolled up — hold released');
         }
     };
     scrollBox.addEventListener('scroll', scrollHandler, { passive: true });
@@ -129,6 +155,7 @@ function setupSendDetection() {
             prevUserCount = userCount;
             pendingPosition = true;
             locked = false;
+            stopHold();
             log('user message detected, waiting for response bubble...');
         }
 
@@ -162,6 +189,7 @@ setInterval(() => {
     if (location.href === lastUrl) return;
     lastUrl = location.href;
     cachedScrollBox = null; // invalidate scrollBox cache on navigation
+    stopHold();
     log('navigation — rebinding');
     waitForScrollBox(el => {
         scrollBox = el;
