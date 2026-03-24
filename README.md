@@ -37,12 +37,12 @@ Most AI chat interfaces auto-scroll to the absolute bottom of the page when you 
 
 This extension overrides that behavior. When you send a message, it calculates 80% of the viewport height and scrolls so your message sits at that position. During streaming, it repeatedly locks the scroll to prevent the site from overriding. If you scroll up intentionally, the lock disengages so you can read earlier parts of the conversation without fighting the page.
 
-## Tech
-
-- Manifest V3
-- Vanilla JavaScript (no build step, no framework)
-- No external dependencies
-
 ## Tech Stack
 
-![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=flat-square) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) ![Google Translate](https://img.shields.io/badge/Google_Translate-4285F4?style=flat-square&logo=googletranslate&logoColor=white)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=flat-square) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white) ![Chrome Extensions](https://img.shields.io/badge/Chrome_Extensions_API-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
+
+- **Manifest V3** — modern extension standard
+- **Vanilla JavaScript** — no build step, no framework, no dependencies
+- **CSS** — positioning overrides, smooth scroll control, overflow-anchor management
+- **MutationObserver API** — efficient DOM change detection for streaming and navigation
+- **getBoundingClientRect** — reliable element positioning across complex DOM trees
