@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ChatGPT Scroll Fix",
+  "name": "ChatPin",
   "version": "3.8",
   "description": "Positions AI chat responses 20% above the bottom viewport for ChatGPT, Gemini, and Grok",
   "icons": {

@@ -1,4 +1,4 @@
-// Grok Scroll Fix
+// ChatPin — Grok
 // 1. On send: position new user message 20% above bottom
 // 2. Hold that position with interval while streaming
 // 3. User scrolling up stops the hold

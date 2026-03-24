@@ -1,4 +1,4 @@
-// ChatGPT Scroll Fix
+// ChatPin
 // Behavior:
 // 1. User sends message → place it 20% above bottom of viewport
 // 2. AI starts streaming → shift one extra 20% upward, once only

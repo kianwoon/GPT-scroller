@@ -1,4 +1,4 @@
-// Gemini Scroll Fix
+// ChatPin — Gemini
 // 1. Disable browser overflow-anchor (was causing auto-scroll on content growth)
 // 2. On send: position new message 20% above bottom
 // 3. Lock scroll after that — user manual scroll (upward) unlocks it

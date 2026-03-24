@@ -1,4 +1,4 @@
-# ChatGPT Scroll Fix
+# ChatPin
 
 [![Release](https://img.shields.io/github/v/release/kianwoon/GPT-scroller?style=flat-square&color=blue)](https://github.com/kianwoon/GPT-scroller/releases) [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)]() [![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=flat-square)]() [![No Dependencies](https://img.shields.io/badge/dependencies-0-green?style=flat-square)]() [![Browser](https://img.shields.io/badge/browser-Brave/Chrome-informational?style=flat-square)]()
 
