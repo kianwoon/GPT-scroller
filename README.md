@@ -21,12 +21,13 @@ A browser extension that fixes scroll behavior on AI chat sites. Positions your 
 
 ## Installation
 
-1. Open Brave or Chrome and go to `brave://extensions` (or `chrome://extensions`)
-2. Enable **Developer mode** (toggle in the top-right corner)
-3. Click **Load unpacked**
-4. Select this project folder
+1. Go to the [latest release](https://github.com/kianwoon/GPT-scroller/releases/latest) and download `GPT-scroller-v3.8.zip`
+2. Extract the zip file to a folder on your computer
+3. Open Brave (or Chrome) and navigate to `brave://extensions` (or `chrome://extensions`)
+4. Enable **Developer mode** — toggle in the top-right corner
+5. Click **Load unpacked** and select the extracted folder
 
-The extension will take effect immediately on supported sites.
+The extension will take effect immediately on [supported sites](#supported-sites).
 
 ## How It Works
 
