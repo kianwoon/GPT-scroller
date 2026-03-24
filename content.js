@@ -16,6 +16,7 @@ let holdId = null;
 let lockedTarget = 0;
 let lastProgrammaticScroll = 0;
 let scrollHandler = null;
+let wheelHandler = null;
 let lastScrollTop = 0;
 
 const SEND_GAP_PX = 120; // unused, kept for reference
@@ -322,6 +323,12 @@ setInterval(() => {
           log('user scrolled up — hold released');
         }
       };
+      // Wheel event fires before scroll — immediately release hold
+      if (scrollBox && wheelHandler) {
+        scrollBox.removeEventListener('wheel', wheelHandler);
+      }
+      wheelHandler = () => stopHold();
+      scrollBox.addEventListener('wheel', wheelHandler, { passive: true });
       scrollBox.addEventListener('scroll', scrollHandler, { passive: true });
       setupStopObserver();
       setupInputListener();
@@ -348,6 +355,12 @@ function init() {
         log('user scrolled up — hold released');
       }
     };
+    // Wheel event fires before scroll — immediately release hold
+    if (scrollBox && wheelHandler) {
+      scrollBox.removeEventListener('wheel', wheelHandler);
+    }
+    wheelHandler = () => stopHold();
+    scrollBox.addEventListener('wheel', wheelHandler, { passive: true });
     scrollBox.addEventListener('scroll', scrollHandler, { passive: true });
     setupStopObserver();
     setupInputListener();

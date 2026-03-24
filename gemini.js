@@ -117,9 +117,15 @@ function positionNewMessage() {
 
 // ── Manual scroll detection (upward = unlock) ─────────────────────────────────
 let scrollHandler = null;
+let wheelHandler = null;
 function setupScrollDetection() {
-    // Remove previous listener to prevent stacking on SPA navigation
+    // Remove previous listeners to prevent stacking on SPA navigation
     if (scrollHandler && scrollBox) scrollBox.removeEventListener('scroll', scrollHandler);
+    if (scrollBox && wheelHandler) {
+        scrollBox.removeEventListener('wheel', wheelHandler);
+    }
+    wheelHandler = () => stopHold();
+    scrollBox.addEventListener('wheel', wheelHandler, { passive: true });
     let lastTop = scrollBox.scrollTop;
     scrollHandler = () => {
         const cur = scrollBox.scrollTop;

@@ -12,6 +12,7 @@ let holdId = null;
 let lastProgrammaticScroll = 0; // timestamp of last extension-driven scroll
 let logCount = 0;
 let scrollHandler = null;
+let wheelHandler = null;
 
 function log(...a) { console.log(`[GrokScrollFix ${logCount++}]`, ...a); }
 
@@ -100,8 +101,13 @@ function positionAndLock() {
 // ── Manual scroll detection ───────────────────────────────────────────────────
 function setupScrollDetection() {
     if (!scrollBox) return;
-    // Remove previous listener to prevent stacking on navigation
+    // Remove previous listeners to prevent stacking on navigation
     if (scrollHandler) scrollBox.removeEventListener('scroll', scrollHandler);
+    if (scrollBox && wheelHandler) {
+        scrollBox.removeEventListener('wheel', wheelHandler);
+    }
+    wheelHandler = () => stopHold();
+    scrollBox.addEventListener('wheel', wheelHandler, { passive: true });
     let lastTop = scrollBox.scrollTop;
 
     scrollHandler = () => {
