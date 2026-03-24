@@ -42,3 +42,7 @@ This extension overrides that behavior. When you send a message, it calculates 8
 - Manifest V3
 - Vanilla JavaScript (no build step, no framework)
 - No external dependencies
+
+## Tech Stack
+
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=flat-square) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) ![Google Translate](https://img.shields.io/badge/Google_Translate-4285F4?style=flat-square&logo=googletranslate&logoColor=white)
