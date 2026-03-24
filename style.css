@@ -1,0 +1,22 @@
+/* This adds the 20% gap at the very end of the chat stream */
+/* NOTE: Selectors below are based on ChatGPT's class names as of early 2026.
+   If the extension stops adding bottom padding, these selectors may need updating
+   to match any class name changes ChatGPT introduces. */
+[class*="react-scroll-to-bottom"]>div>div:last-child::after {
+    content: "";
+    display: block;
+    height: 20vh !important;
+    /* 20% of the screen height */
+    width: 100%;
+}
+
+/* Forces the container to allow the extra space */
+[class*="react-scroll-to-bottom"]>div>div {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Smooth scrolling for better UX */
+[class*="react-scroll-to-bottom"]>div {
+    scroll-behavior: smooth !important;
+}
