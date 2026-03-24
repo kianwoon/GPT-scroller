@@ -124,12 +124,21 @@ function positionAfterSend() {
 
   const msgContentOffset = getMsgContentOffset(msg);
 
-  // Place message top at 80% down the viewport = 20% above the bottom/input box
-  const target = msgContentOffset - scrollBox.clientHeight * 0.80;
-  const max = scrollBox.scrollHeight - scrollBox.clientHeight;
+  // Find previous AI response to prevent gap between it and new message
+  let minScroll = 0;
+  const prevResponse = msg.previousElementSibling;
+  if (prevResponse) {
+    const prevOffset = getMsgContentOffset(prevResponse);
+    minScroll = prevOffset - 8; // 8px padding from viewport top
+  }
 
-  log(`positionAfterSend: msgContentOffset=${Math.round(msgContentOffset)} clientH=${scrollBox.clientHeight} target=${Math.round(target)} max=${Math.round(max)}`);
-  setScrollTop(target, 'after-send');
+  // Desired: new message top at 80% viewport (20% above input box)
+  const target = msgContentOffset - scrollBox.clientHeight * 0.80;
+  // Don't scroll higher than needed — close the gap
+  const finalTarget = Math.max(target, minScroll);
+
+  log(`positionAfterSend: msgOffset=${Math.round(msgContentOffset)} target=${Math.round(target)} minScroll=${Math.round(minScroll)} final=${Math.round(finalTarget)}`);
+  setScrollTop(finalTarget, 'after-send');
 }
 
 function positionWhenStreamingStarts() {
