@@ -12,8 +12,6 @@ let logCount = 0;
 let holdId = null;
 let lockedTarget = 0;
 let lastProgrammaticScroll = 0;
-let userScrolling = false;
-let userScrollingTimeout = null;
 
 function log(...a) { console.log(`[GeminiScrollFix ${logCount++}]`, ...a); }
 
@@ -75,7 +73,7 @@ function startHold(target) {
     lockedTarget = target;
     holdId = setInterval(() => {
         if (!scrollBox) return;
-        if (Math.abs(scrollBox.scrollTop - lockedTarget) > 2 && !userScrolling) {
+        if (Math.abs(scrollBox.scrollTop - lockedTarget) > 2) {
             scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
             scrollBox.scrollTop = lockedTarget;
             scrollBox.style.removeProperty('scroll-behavior');
@@ -87,7 +85,6 @@ function startHold(target) {
 
 function stopHold() {
     if (holdId) { clearInterval(holdId); holdId = null; }
-    userScrolling = false;
     log('hold stopped');
 }
 
@@ -125,9 +122,6 @@ function setupScrollDetection() {
     if (scrollHandler && scrollBox) scrollBox.removeEventListener('scroll', scrollHandler);
     let lastTop = scrollBox.scrollTop;
     scrollHandler = () => {
-        userScrolling = true;
-        clearTimeout(userScrollingTimeout);
-        userScrollingTimeout = setTimeout(() => { userScrolling = false; }, 200);
         const cur = scrollBox.scrollTop;
         const delta = cur - lastTop;
         lastTop = cur;

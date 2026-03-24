@@ -12,8 +12,6 @@ let holdId = null;
 let lastProgrammaticScroll = 0; // timestamp of last extension-driven scroll
 let logCount = 0;
 let scrollHandler = null;
-let userScrolling = false;
-let userScrollingTimeout = null;
 
 function log(...a) { console.log(`[GrokScrollFix ${logCount++}]`, ...a); }
 
@@ -48,7 +46,7 @@ function startHold(target) {
     locked = true;
     holdId = setInterval(() => {
         if (!scrollBox || !locked) return;
-        if (Math.abs(scrollBox.scrollTop - lockedTarget) > 2 && !userScrolling) {
+        if (Math.abs(scrollBox.scrollTop - lockedTarget) > 2) {
             scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
             scrollBox.scrollTop = lockedTarget;
             scrollBox.style.removeProperty('scroll-behavior');
@@ -60,7 +58,6 @@ function startHold(target) {
 
 function stopHold() {
     if (holdId) { clearInterval(holdId); holdId = null; }
-    userScrolling = false;
     log('hold stopped');
 }
 
@@ -108,10 +105,6 @@ function setupScrollDetection() {
     let lastTop = scrollBox.scrollTop;
 
     scrollHandler = () => {
-        userScrolling = true;
-        clearTimeout(userScrollingTimeout);
-        userScrollingTimeout = setTimeout(() => { userScrolling = false; }, 200);
-
         const cur = scrollBox.scrollTop;
         const delta = cur - lastTop;
         lastTop = cur;
