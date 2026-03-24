@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/kianwoon/GPT-scroller?style=flat-square&color=blue)](https://github.com/kianwoon/GPT-scroller/releases) [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)]() [![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=flat-square)]() [![No Dependencies](https://img.shields.io/badge/dependencies-0-green?style=flat-square)]() [![Browser](https://img.shields.io/badge/browser-Brave/Chrome-informational?style=flat-square)]()
 
-When you use AI chatbots daily for work and personal tasks, every time you send a new message the page snaps to the very bottom. The AI response you were reading flies off the top of the screen, and you have to scroll back up to find where you left off. This happens dozens of times a day and becomes a constant source of friction.
+When you use AI chatbots daily for work and personal tasks, every time you send a new message it jumps to the top of the page, pushing your previous context off-screen. The AI response you were reading disappears, and you have to scroll back up to find where you left off. This happens dozens of times a day and becomes a constant source of friction.
 
 This extension fixes that. When you send a new message, it positions it at 20% above the input box, keeping the tail of the previous AI response visible above it. No more losing context. No more scrolling up after every send.
 
@@ -17,8 +17,8 @@ This extension fixes that. When you send a new message, it positions it at 20% a
 
 ## The Problem
 
-- ChatGPT, Gemini, and Grok all auto-scroll to the absolute bottom when you send a message
-- Your previous context disappears off-screen, forcing manual scroll-up every time
+- ChatGPT, Gemini, and Grok all jump to the top of the page when you send a message, pushing your previous context off-screen
+- Your previous context disappears, forcing manual scroll-up every time to find what you were reading
 - This friction repeats dozens of times per day across multiple AI tools
 - It breaks your reading flow and kills productivity
 
