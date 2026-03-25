@@ -75,9 +75,10 @@ function positionAndLock() {
     // Get content offset via getBoundingClientRect (reliable, no offsetTop chain)
     const offset = msg.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
 
-    // Gap-close: ensure previous AI response remains visible above the new message
+    // Gap-close: find previous turn's message bubble to prevent gap
     let minScroll = 0;
-    const prevTurn = lastTurn.previousElementSibling;
+    // Use turns NodeList instead of previousElementSibling (more robust — Grok turns aren't always siblings)
+    const prevTurn = turns.length > 1 ? turns[turns.length - 2] : null;
     if (prevTurn) {
         const prevBubble = prevTurn.querySelector('.message-bubble');
         if (prevBubble) {
@@ -87,7 +88,9 @@ function positionAndLock() {
     }
 
     const max = scrollBox.scrollHeight - scrollBox.clientHeight;
-    const target = Math.min(Math.max(0, offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO), max);
+    // If raw target < 0, content fits in viewport — scroll to bottom instead of top
+    const rawTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
+    const target = rawTarget < 0 ? max : Math.min(rawTarget, max);
     const clampedTarget = Math.max(target, minScroll);
     log('msgOffset:', Math.round(offset), 'target:', Math.round(target), 'minScroll:', Math.round(minScroll), 'clamped:', Math.round(clampedTarget), 'max:', Math.round(max));
 

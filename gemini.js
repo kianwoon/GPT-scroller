@@ -12,6 +12,7 @@ let logCount = 0;
 let holdId = null;
 let lockedTarget = 0;
 let lastProgrammaticScroll = 0;
+let lastTop = 0; // track scroll position for delta calculation
 
 function log(...a) { console.log(`[GeminiScrollFix ${logCount++}]`, ...a); }
 
@@ -64,6 +65,8 @@ function scrollTo(pos) {
     scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
     scrollBox.scrollTop = Math.min(Math.max(0, pos), max);
     scrollBox.style.removeProperty('scroll-behavior');
+    lastProgrammaticScroll = performance.now();
+    lastTop = scrollBox.scrollTop;
     log('scrollTop set to', Math.round(scrollBox.scrollTop));
 }
 
@@ -78,6 +81,7 @@ function startHold(target) {
             scrollBox.scrollTop = lockedTarget;
             scrollBox.style.removeProperty('scroll-behavior');
             lastProgrammaticScroll = performance.now();
+            lastTop = lockedTarget;
         }
     }, 100);
     log('hold started at', Math.round(target));
@@ -99,15 +103,19 @@ function positionNewMessage() {
 
     const target = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
 
-    // Gap-close: find previous AI response to prevent gap between it and new message
+    // Gap-close: find previous turn's AI response to prevent gap
     let minScroll = 0;
-    const prevResponse = msg.previousElementSibling;
+    const container = msg.closest('.conversation-container');
+    const prevContainer = container?.previousElementSibling;
+    const prevResponse = prevContainer?.querySelector('model-response');
     if (prevResponse) {
         const prevOffset = prevResponse.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
         minScroll = prevOffset - 8; // 8px padding from viewport top
     }
 
-    const finalTarget = Math.max(target, minScroll);
+    // If target < 0, content fits in viewport — scroll to bottom instead of top
+    const bottom = scrollBox.scrollHeight - scrollBox.clientHeight;
+    const finalTarget = target < 0 ? bottom : Math.max(target, minScroll);
     log('positioning: msgOffset=', Math.round(offset), 'target=', Math.round(target), 'minScroll=', Math.round(minScroll), 'final=', Math.round(finalTarget));
     scrollTo(finalTarget);
     locked = true;
@@ -126,12 +134,12 @@ function setupScrollDetection() {
     }
     wheelHandler = () => stopHold();
     scrollBox.addEventListener('wheel', wheelHandler, { passive: true });
-    let lastTop = scrollBox.scrollTop;
+    lastTop = scrollBox.scrollTop;
     scrollHandler = () => {
         const cur = scrollBox.scrollTop;
         const delta = cur - lastTop;
         lastTop = cur;
-        if (locked && performance.now() - lastProgrammaticScroll > 100 && delta < -3) {
+        if (locked && performance.now() - lastProgrammaticScroll > 300 && delta < -3) {
             locked = false;
             stopHold();
             log('user scrolled up — hold released');

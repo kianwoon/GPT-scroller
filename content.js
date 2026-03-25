@@ -150,9 +150,14 @@ function positionAfterSend() {
 
   const msgContentOffset = getMsgContentOffset(msg);
 
-  // Find previous AI response to prevent gap between it and new message
+  // Gap-close: find previous AI response to prevent gap between it and new message
   let minScroll = 0;
-  const prevResponse = msg.previousElementSibling;
+  // Try direct sibling first, then walk up to parent container
+  let prevResponse = msg.previousElementSibling;
+  if (!prevResponse) {
+    const parentContainer = msg.parentElement?.previousElementSibling;
+    prevResponse = parentContainer?.querySelector('[data-message-author-role="assistant"]');
+  }
   if (prevResponse) {
     const prevOffset = getMsgContentOffset(prevResponse);
     minScroll = prevOffset - 8; // 8px padding from viewport top
@@ -161,7 +166,9 @@ function positionAfterSend() {
   // Desired: new message bottom at 70% viewport (30% above input box)
   const target = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * 0.70;
   // Don't scroll higher than needed — close the gap
-  const finalTarget = Math.max(target, minScroll);
+  // If target < 0, content fits in viewport — scroll to bottom instead of top
+  const bottom = scrollBox.scrollHeight - scrollBox.clientHeight;
+  const finalTarget = target < 0 ? bottom : Math.max(target, minScroll);
 
   log(`positionAfterSend: msgOffset=${Math.round(msgContentOffset)} target=${Math.round(target)} minScroll=${Math.round(minScroll)} final=${Math.round(finalTarget)}`);
   setScrollTop(finalTarget, 'after-send');
