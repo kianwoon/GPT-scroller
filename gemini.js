@@ -1,9 +1,9 @@
 // ChatPin — Gemini
 // 1. Disable browser overflow-anchor (was causing auto-scroll on content growth)
-// 2. On send: position new message 20% above bottom
+// 2. On send: position new message 30% above bottom
 // 3. Lock scroll after that — user manual scroll (upward) unlocks it
 
-const VIEWPORT_RATIO = 0.80; // msg top at 80% down = 20% above input box
+const VIEWPORT_RATIO = 0.70; // msg top at 70% down = 30% above input box
 
 let scrollBox = null;
 let cachedScrollBox = null;
@@ -88,7 +88,7 @@ function stopHold() {
     log('hold stopped');
 }
 
-// ── Position new message 20% above bottom ────────────────────────────────────
+// ── Position new message 30% above bottom ────────────────────────────────────
 function positionNewMessage() {
     const msgs = document.querySelectorAll('user-query');
     if (!msgs.length || !scrollBox) return;
@@ -97,7 +97,7 @@ function positionNewMessage() {
     // Get message position relative to scroll container
     const offset = msg.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
 
-    const target = offset - scrollBox.clientHeight * VIEWPORT_RATIO;
+    const target = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
 
     // Gap-close: find previous AI response to prevent gap between it and new message
     let minScroll = 0;

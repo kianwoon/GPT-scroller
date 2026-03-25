@@ -1,9 +1,9 @@
 // ChatPin — Grok
-// 1. On send: position new user message 20% above bottom
+// 1. On send: position new user message 30% above bottom
 // 2. Hold that position with interval while streaming
 // 3. User scrolling up stops the hold
 
-const VIEWPORT_RATIO = 0.80;
+const VIEWPORT_RATIO = 0.70;
 let scrollBox = null;
 let cachedScrollBox = null;
 let locked = false;
@@ -62,7 +62,7 @@ function stopHold() {
     log('hold stopped');
 }
 
-// ── Position user message 20% above bottom ───────────────────────────────────
+// ── Position user message 30% above bottom ──────────────────────────────────
 function positionAndLock() {
     if (!scrollBox) return;
 
@@ -87,7 +87,7 @@ function positionAndLock() {
     }
 
     const max = scrollBox.scrollHeight - scrollBox.clientHeight;
-    const target = Math.min(Math.max(0, offset - scrollBox.clientHeight * VIEWPORT_RATIO), max);
+    const target = Math.min(Math.max(0, offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO), max);
     const clampedTarget = Math.max(target, minScroll);
     log('msgOffset:', Math.round(offset), 'target:', Math.round(target), 'minScroll:', Math.round(minScroll), 'clamped:', Math.round(clampedTarget), 'max:', Math.round(max));
 

@@ -1,7 +1,7 @@
 // ChatPin
 // Behavior:
-// 1. User sends message → place it 20% above bottom of viewport
-// 2. AI starts streaming → shift one extra 20% upward, once only
+// 1. User sends message → place it 30% above bottom of viewport
+// 2. AI starts streaming → shift one extra 30% upward, once only
 // 3. After that → no auto-scroll until next send
 
 let scrollBox = null;
@@ -158,8 +158,8 @@ function positionAfterSend() {
     minScroll = prevOffset - 8; // 8px padding from viewport top
   }
 
-  // Desired: new message top at 80% viewport (20% above input box)
-  const target = msgContentOffset - scrollBox.clientHeight * 0.80;
+  // Desired: new message bottom at 70% viewport (30% above input box)
+  const target = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * 0.70;
   // Don't scroll higher than needed — close the gap
   const finalTarget = Math.max(target, minScroll);
 
