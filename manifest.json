@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ChatPin",
-  "version": "3.8",
+  "version": "3.9",
   "description": "Positions AI chat responses 20% above the bottom viewport for ChatGPT, Gemini, and Grok",
   "icons": {
     "16": "icons/icon-16.png",
