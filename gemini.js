@@ -1,3 +1,7 @@
+// Guard against re-injection by background service worker
+if (window.__chatpinLoaded_gemini) throw new Error('[ChatPin] Already loaded');
+window.__chatpinLoaded_gemini = true;
+
 // ChatPin — Gemini
 // 1. Disable browser overflow-anchor (was causing auto-scroll on content growth)
 // 2. On send: position new message 30% above bottom
@@ -47,7 +51,7 @@ function findScrollBox() {
     return best;
 }
 
-function waitForScrollBox(cb) {
+function waitForScrollBox(cb, attempt = 1) {
     const el = findScrollBox();
     if (el) { cb(el); return; }
     const obs = new MutationObserver(() => {
@@ -55,7 +59,15 @@ function waitForScrollBox(cb) {
         if (el) { clearTimeout(timer); obs.disconnect(); cb(el); }
     });
     obs.observe(document.body, { childList: true, subtree: true });
-    const timer = setTimeout(() => { obs.disconnect(); log('waitForScrollBox timed out after 10s'); }, 10000);
+    const timer = setTimeout(() => {
+        obs.disconnect();
+        if (attempt < 3) {
+            log(`waitForScrollBox timed out, retry ${attempt}/3...`);
+            waitForScrollBox(cb, attempt + 1);
+        } else {
+            log('waitForScrollBox failed after 3 attempts');
+        }
+    }, 10000);
 }
 
 // ── Scroll helper ─────────────────────────────────────────────────────────────

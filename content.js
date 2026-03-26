@@ -1,3 +1,7 @@
+// Guard against re-injection by background service worker
+if (window.__chatpinLoaded_chatgpt) throw new Error('[ChatPin] Already loaded');
+window.__chatpinLoaded_chatgpt = true;
+
 // ChatPin
 // Behavior:
 // 1. User sends message → place it 30% above bottom of viewport
@@ -84,7 +88,7 @@ function findScrollBox() {
 }
 
 // Watch for scrollBox to appear in DOM (handles late render + navigation)
-function waitForScrollBox(callback) {
+function waitForScrollBox(callback, attempt = 1) {
   // Try immediately first
   const found = findScrollBox();
   if (found) { callback(found); return; }
@@ -94,6 +98,7 @@ function waitForScrollBox(callback) {
   scrollBoxObserver = new MutationObserver(() => {
     const el = findScrollBox();
     if (el) {
+      clearTimeout(timer);
       scrollBoxObserver.disconnect();
       scrollBoxObserver = null;
       log('scrollBox appeared in DOM');
@@ -101,6 +106,16 @@ function waitForScrollBox(callback) {
     }
   });
   scrollBoxObserver.observe(document.body, { childList: true, subtree: true });
+  const timer = setTimeout(() => {
+    scrollBoxObserver.disconnect();
+    scrollBoxObserver = null;
+    if (attempt < 3) {
+      log(`scrollBox not found, retry ${attempt}/3...`);
+      waitForScrollBox(callback, attempt + 1);
+    } else {
+      log('scrollBox not found after 3 attempts');
+    }
+  }, 10000);
   log('Waiting for scrollBox to appear...');
 }
 
