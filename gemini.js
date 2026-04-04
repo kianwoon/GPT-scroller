@@ -33,14 +33,15 @@ log('overflow-anchor disabled');
 
 // ── Scroll container ──────────────────────────────────────────────────────────
 function findScrollBox() {
-    // Return cached element if still valid and scrollable
-    if (cachedScrollBox && cachedScrollBox.isConnected && cachedScrollBox.scrollHeight > cachedScrollBox.clientHeight) {
-        return cachedScrollBox;
+    // Return cached element if still valid and styled as scrollable
+    if (cachedScrollBox && cachedScrollBox.isConnected) {
+        const ov = window.getComputedStyle(cachedScrollBox).overflowY;
+        if (['auto', 'scroll', 'overlay'].includes(ov)) return cachedScrollBox;
     }
     const el = document.querySelector('infinite-scroller.chat-history');
-    if (el && el.scrollHeight > el.clientHeight) { cachedScrollBox = el; return el; }
-    // fallback: largest scrollable div only (not all elements)
-    let best = null, bestOv = 0;
+    if (el) { cachedScrollBox = el; return el; }
+    // fallback: largest scrollable div
+    let best = null, bestOv = -1;
     for (const el of document.querySelectorAll('div')) {
         const ov = window.getComputedStyle(el).overflowY;
         if (!['auto', 'scroll', 'overlay'].includes(ov)) continue;
@@ -125,9 +126,14 @@ function positionNewMessage() {
         minScroll = prevOffset - 8; // 8px padding from viewport top
     }
 
-    // If target < 0, content fits in viewport — scroll to bottom instead of top
-    const bottom = scrollBox.scrollHeight - scrollBox.clientHeight;
-    const finalTarget = target < 0 ? bottom : Math.max(target, minScroll);
+    // If target < 0, content fits in viewport — don't scroll at all.
+    // Scrolling to "bottom" when there's no overflow would clamp to scrollTop=0 (top).
+    if (target < 0) {
+        log('content fits in viewport, no scroll needed');
+        return;
+    }
+
+    const finalTarget = Math.max(target, minScroll);
     log('positioning: msgOffset=', Math.round(offset), 'target=', Math.round(target), 'minScroll=', Math.round(minScroll), 'final=', Math.round(finalTarget));
     scrollTo(finalTarget);
     locked = true;

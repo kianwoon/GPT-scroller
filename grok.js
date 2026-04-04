@@ -22,12 +22,13 @@ function log(...a) { console.log(`[GrokScrollFix ${logCount++}]`, ...a); }
 
 // ── Find scroll container ─────────────────────────────────────────────────────
 function findScrollBox() {
-    // Return cached element if still valid and scrollable
-    if (cachedScrollBox && cachedScrollBox.isConnected && cachedScrollBox.scrollHeight > cachedScrollBox.clientHeight + 10) {
-        return cachedScrollBox;
+    // Return cached element if still valid and styled as scrollable
+    if (cachedScrollBox && cachedScrollBox.isConnected) {
+        const ov = window.getComputedStyle(cachedScrollBox).overflowY;
+        if (['auto', 'scroll', 'overlay'].includes(ov)) return cachedScrollBox;
     }
+    // Accept even without overflow — it will scroll once content arrives
     const el = Array.from(document.querySelectorAll('.overflow-y-auto'))
-        .filter(el => el.scrollHeight > el.clientHeight + 10)
         .sort((a, b) => (b.scrollHeight - b.clientHeight) - (a.scrollHeight - a.clientHeight))[0] || null;
     if (el) cachedScrollBox = el;
     return el;
@@ -99,10 +100,16 @@ function positionAndLock() {
         }
     }
 
-    const max = scrollBox.scrollHeight - scrollBox.clientHeight;
-    // If raw target < 0, content fits in viewport — scroll to bottom instead of top
+    // If raw target < 0, content fits in viewport — don't scroll at all.
+    // Scrolling to "max" when there's no overflow would clamp to scrollTop=0 (top).
     const rawTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
-    const target = rawTarget < 0 ? max : Math.min(rawTarget, max);
+    if (rawTarget < 0) {
+        log('content fits in viewport, no scroll needed');
+        return;
+    }
+
+    const max = scrollBox.scrollHeight - scrollBox.clientHeight;
+    const target = Math.min(rawTarget, max);
     const clampedTarget = Math.max(target, minScroll);
     log('msgOffset:', Math.round(offset), 'target:', Math.round(target), 'minScroll:', Math.round(minScroll), 'clamped:', Math.round(clampedTarget), 'max:', Math.round(max));
 
