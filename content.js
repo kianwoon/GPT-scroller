@@ -14,6 +14,7 @@ let awaitingSendPosition = false;
 let streamingShiftApplied = false;
 let currentCycleLocked = false;
 let stopObserver = null;
+let userMsgObserver = null;
 let inputAttachObserver = null;
 let scrollBoxObserver = null;
 let holdId = null;
@@ -66,17 +67,23 @@ function findScrollBox() {
       return cachedScrollBox;
     }
   }
-  // Confirmed selector from diagnostics
+  // Preferred selector: accept even without overflow — it will scroll once content arrives.
+  // The +10 threshold caused findScrollBox to return null after navigation when the
+  // conversation was empty/short, breaking all subsequent send flows.
   const preferred = document.querySelector('div[class*="@w-sm\\/main:"]');
-  if (preferred && preferred.scrollHeight > preferred.clientHeight + 10) {
-    cachedScrollBox = preferred;
-    return preferred;
+  if (preferred) {
+    const ov = window.getComputedStyle(preferred).overflowY;
+    if (['auto', 'scroll', 'overlay'].includes(ov)) {
+      cachedScrollBox = preferred;
+      return preferred;
+    }
   }
-  // Fallback: largest scrollable DIV (only if no cache exists)
+  // Fallback: check cached element
   if (cachedScrollBox && cachedScrollBox.isConnected) {
     return cachedScrollBox;
   }
-  let best = null, bestOverflow = 0;
+  // Full scan: largest scrollable DIV (accept any overflowY style, even with 0 overflow)
+  let best = null, bestOverflow = -1;
   for (const el of document.querySelectorAll('div')) {
     const ov = window.getComputedStyle(el).overflowY;
     if (!['auto', 'scroll', 'overlay'].includes(ov)) continue;
@@ -158,7 +165,9 @@ function getMsgContentOffset(msg) {
 }
 
 function positionAfterSend() {
-  if (!scrollBox || currentCycleLocked) return;
+  if (!scrollBox) { log('positionAfterSend: NO scrollBox'); return; }
+  if (currentCycleLocked) { log('positionAfterSend: blocked by currentCycleLocked'); return; }
+  if (!scrollBox.isConnected) { log('positionAfterSend: scrollBox disconnected'); return; }
 
   const msg = getLastUserMessage();
   if (!msg) { log('positionAfterSend: no msg found'); return; }
@@ -180,10 +189,16 @@ function positionAfterSend() {
 
   // Desired: new message bottom at 70% viewport (30% above input box)
   const target = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * 0.70;
-  // Don't scroll higher than needed — close the gap
-  // If target < 0, content fits in viewport — scroll to bottom instead of top
-  const bottom = scrollBox.scrollHeight - scrollBox.clientHeight;
-  const finalTarget = target < 0 ? bottom : Math.max(target, minScroll);
+
+  // If target < 0, content fits in viewport — don't scroll at all.
+  // Scrolling to "bottom" when there's no overflow would clamp to scrollTop=0 (top).
+  if (target < 0) {
+    log('Content fits in viewport, no scroll needed');
+    return;
+  }
+
+  // Don't scroll higher than needed — close the gap between previous response and new message
+  const finalTarget = Math.max(target, minScroll);
 
   log(`positionAfterSend: msgOffset=${Math.round(msgContentOffset)} target=${Math.round(target)} minScroll=${Math.round(minScroll)} final=${Math.round(finalTarget)}`);
   setScrollTop(finalTarget, 'after-send');
@@ -225,7 +240,8 @@ function setupStopObserver() {
 
 // ── Send flow ─────────────────────────────────────────────────────────────────
 function beginSendFlow(reason) {
-  // Re-bind scrollBox in case ChatGPT re-rendered it (e.g. after navigation)
+  // Only invalidate cache if the cached element is no longer in the DOM
+  if (cachedScrollBox && !cachedScrollBox.isConnected) cachedScrollBox = null;
   const fresh = findScrollBox();
   if (fresh) scrollBox = fresh;
   if (!scrollBox) { log('No scrollBox, aborting send flow'); return; }
@@ -235,12 +251,13 @@ function beginSendFlow(reason) {
   currentCycleLocked = false;
   awaitingSendPosition = true;
 
-  log(`Send [${reason}] | msgs before: ${countBefore}`);
+  log(`Send [${reason}] | msgs before: ${countBefore} | scrollBox connected: ${scrollBox.isConnected} | box.overflow: ${scrollBox.scrollHeight - scrollBox.clientHeight}`);
 
   const startedAt = Date.now();
 
   function poll() {
     // Re-bind scrollBox if it changed (ChatGPT sometimes re-mounts it on send)
+    if (cachedScrollBox && !cachedScrollBox.isConnected) cachedScrollBox = null;
     const fresh = findScrollBox();
     if (fresh && fresh !== scrollBox) {
       scrollBox = fresh;
@@ -248,10 +265,13 @@ function beginSendFlow(reason) {
     }
 
     if (getUserMessageCount() > countBefore) {
-      log('New user message detected, positioning immediately');
+      log(`New user message detected (count: ${getUserMessageCount()} > ${countBefore}), positioning after layout`);
       awaitingSendPosition = false;
-      positionAfterSend();
-      if (isStreamingUIVisible()) positionWhenStreamingStarts();
+      // Use rAF to ensure the message element has been laid out with correct dimensions
+      requestAnimationFrame(() => {
+        positionAfterSend();
+        if (isStreamingUIVisible()) positionWhenStreamingStarts();
+      });
       return;
     }
 
@@ -268,45 +288,56 @@ function beginSendFlow(reason) {
 
 // ── Input listener ────────────────────────────────────────────────────────────
 function setupInputListener() {
+  // ChatGPT uses a contenteditable div (#prompt-textarea, class=ProseMirror), NOT a real textarea.
+  // keydown Enter on contenteditable doesn't bubble the same way — we must also listen
+  // for the message appearing in the DOM as a fallback trigger.
+  // Strategy: detect new user messages via MutationObserver (most reliable for React apps)
+  // AND listen to the Send button click as a secondary trigger.
+  let userMsgObserver = null;
+
   const attach = () => {
-    const textarea =
-      document.querySelector('#prompt-textarea') ||
-      document.querySelector('textarea');
-
-    let textareaAttached = false;
-    let btnAttached = false;
-
-    if (textarea && !textarea.hasAttribute('data-sf-key')) {
-      textarea.setAttribute('data-sf-key', 'true');
-      textarea.addEventListener('keydown', (e) => {
-        if (e.isComposing || e.key !== 'Enter' || e.shiftKey) return;
-        beginSendFlow('Enter');
-      }, true);
-      textareaAttached = true;
-      log('Textarea listener attached');
-    } else if (textarea && textarea.hasAttribute('data-sf-key')) {
-      textareaAttached = true;
-    }
-
     const btn = findSendButton();
     if (btn && !btn.hasAttribute('data-sf-click')) {
       btn.setAttribute('data-sf-click', 'true');
       btn.addEventListener('click', () => beginSendFlow('SendButton'), true);
-      btnAttached = true;
       log('Send button listener attached');
-    } else if (btn && btn.hasAttribute('data-sf-click')) {
-      btnAttached = true;
     }
 
-    // Disconnect observer once both listeners are successfully attached
-    if (textareaAttached && btnAttached && inputAttachObserver) {
-      inputAttachObserver.disconnect();
-      inputAttachObserver = null;
-      log('inputAttachObserver disconnected — both listeners attached');
+    // Watch for new user messages in the DOM — this catches both Enter and button click
+    // because ChatGPT always adds [data-message-author-role="user"] to the DOM when a
+    // user message is submitted, regardless of input method.
+    if (!userMsgObserver) {
+      let knownMsgCount = getUserMessageCount();
+      userMsgObserver = new MutationObserver(() => {
+        const count = getUserMessageCount();
+        if (count > knownMsgCount) {
+          knownMsgCount = count;
+          beginSendFlow('MsgAppeared');
+        }
+      });
+      userMsgObserver.observe(document.body, { childList: true, subtree: true });
+      log('User message observer attached');
+    }
+
+    const promptDiv = document.querySelector('#prompt-textarea');
+    if (promptDiv && !promptDiv.hasAttribute('data-sf-key')) {
+      promptDiv.setAttribute('data-sf-key', 'true');
+      // keydown on contenteditable as secondary trigger (best-effort).
+      // The MutationObserver (userMsgObserver) is the primary trigger — it detects
+      // when [data-message-author-role="user"] appears in the DOM, which is the
+      // most reliable signal regardless of input method.
+      promptDiv.addEventListener('keydown', (e) => {
+        if (e.isComposing || e.key !== 'Enter' || e.shiftKey) return;
+        beginSendFlow('Enter');
+      }, true);
+      log('Prompt contenteditable listener attached');
     }
   };
 
   attach();
+  // Keep inputAttachObserver running to handle React re-renders of the prompt div.
+  // It will call attach() again, but attach() guards against duplicate listeners
+  // via data-sf-key / data-sf-click attributes.
   if (!inputAttachObserver) {
     inputAttachObserver = new MutationObserver(attach);
     inputAttachObserver.observe(document.body, { childList: true, subtree: true });
@@ -326,9 +357,10 @@ setInterval(() => {
     cachedScrollBox = null;
     stopObserver?.disconnect();
     stopObserver = null;
-    // Clear textarea marker so setupInputListener re-attaches after navigation
-    const oldTextarea = document.querySelector('textarea[data-sf-key]');
-    if (oldTextarea) oldTextarea.removeAttribute('data-sf-key');
+    // Note: intentionally NOT clearing prompt div data-sf-key marker here.
+    // If React reuses the same textarea element, clearing the marker causes
+    // setupInputListener to attach a DUPLICATE listener. The marker is only
+    // cleared when the element is actually replaced (new element = no marker).
     waitForScrollBox((el) => {
       scrollBox = el;
       // User scroll detection — release hold when user scrolls up
@@ -369,6 +401,7 @@ function init() {
     }
     lastScrollTop = scrollBox.scrollTop;
     scrollHandler = () => {
+      if (!scrollBox) return;
       const cur = scrollBox.scrollTop;
       const delta = cur - lastScrollTop;
       lastScrollTop = cur;
@@ -381,7 +414,7 @@ function init() {
     if (scrollBox && wheelHandler) {
       scrollBox.removeEventListener('wheel', wheelHandler);
     }
-    wheelHandler = () => stopHold();
+    wheelHandler = () => { if (scrollBox) stopHold(); };
     scrollBox.addEventListener('wheel', wheelHandler, { passive: true });
     scrollBox.addEventListener('scroll', scrollHandler, { passive: true });
     setupStopObserver();
