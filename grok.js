@@ -100,16 +100,10 @@ function positionAndLock() {
         }
     }
 
-    // If raw target < 0, content fits in viewport — don't scroll at all.
-    // Scrolling to "max" when there's no overflow would clamp to scrollTop=0 (top).
-    const rawTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
-    if (rawTarget < 0) {
-        log('content fits in viewport, no scroll needed');
-        return;
-    }
-
     const max = scrollBox.scrollHeight - scrollBox.clientHeight;
-    const target = Math.min(rawTarget, max);
+    // If raw target < 0, content fits in viewport — scroll to bottom (max = 0 if no overflow)
+    const rawTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
+    const target = rawTarget < 0 ? max : Math.min(rawTarget, max);
     const clampedTarget = Math.max(target, minScroll);
     log('msgOffset:', Math.round(offset), 'target:', Math.round(target), 'minScroll:', Math.round(minScroll), 'clamped:', Math.round(clampedTarget), 'max:', Math.round(max));
 
