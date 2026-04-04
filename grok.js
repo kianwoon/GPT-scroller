@@ -100,13 +100,11 @@ function positionAndLock() {
         }
     }
 
-    // If raw target < 0, content fits in viewport — don't scroll, but still start hold
-    // at current position so streaming doesn't auto-scroll away from it.
+    // If raw target < 0, content fits in viewport — don't scroll or hold.
+    // Let the natural layout handle it.
     const rawTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
     if (rawTarget < 0) {
-        locked = true;
-        startHold(scrollBox.scrollTop);
-        log('content fits viewport, hold at current position:', scrollBox.scrollTop);
+        log('content fits viewport, waiting for response');
         return;
     }
 
