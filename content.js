@@ -190,10 +190,11 @@ function positionAfterSend() {
   // Desired: new message bottom at 70% viewport (30% above input box)
   const target = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * 0.70;
 
-  // If target < 0, content fits in viewport — don't scroll at all.
-  // Scrolling to "bottom" when there's no overflow would clamp to scrollTop=0 (top).
+  // If target < 0, content fits in viewport — don't scroll, but still start hold
+  // at current position so streaming doesn't auto-scroll the conversation away.
   if (target < 0) {
-    log('Content fits in viewport, no scroll needed');
+    log('Content fits in viewport, hold at current position:', scrollBox.scrollTop);
+    startHold(scrollBox.scrollTop);
     return;
   }
 

@@ -100,10 +100,18 @@ function positionAndLock() {
         }
     }
 
-    const max = scrollBox.scrollHeight - scrollBox.clientHeight;
-    // If raw target < 0, content fits in viewport — scroll to bottom (max = 0 if no overflow)
+    // If raw target < 0, content fits in viewport — don't scroll, but still start hold
+    // at current position so streaming doesn't auto-scroll away from it.
     const rawTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
-    const target = rawTarget < 0 ? max : Math.min(rawTarget, max);
+    if (rawTarget < 0) {
+        locked = true;
+        startHold(scrollBox.scrollTop);
+        log('content fits viewport, hold at current position:', scrollBox.scrollTop);
+        return;
+    }
+
+    const max = scrollBox.scrollHeight - scrollBox.clientHeight;
+    const target = Math.min(rawTarget, max);
     const clampedTarget = Math.max(target, minScroll);
     log('msgOffset:', Math.round(offset), 'target:', Math.round(target), 'minScroll:', Math.round(minScroll), 'clamped:', Math.round(clampedTarget), 'max:', Math.round(max));
 

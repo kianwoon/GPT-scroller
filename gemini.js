@@ -126,8 +126,16 @@ function positionNewMessage() {
         minScroll = prevOffset - 8; // 8px padding from viewport top
     }
 
-    const bottom = scrollBox.scrollHeight - scrollBox.clientHeight;
-    const finalTarget = target < 0 ? bottom : Math.max(target, minScroll);
+    // If target < 0, content fits in viewport — don't scroll, but still start hold
+    // at current position so streaming doesn't auto-scroll away from it.
+    if (target < 0) {
+        locked = true;
+        startHold(scrollBox.scrollTop);
+        log('content fits viewport, hold at current position:', scrollBox.scrollTop);
+        return;
+    }
+
+    const finalTarget = Math.max(target, minScroll);
     log('positioning: msgOffset=', Math.round(offset), 'target=', Math.round(target), 'minScroll=', Math.round(minScroll), 'final=', Math.round(finalTarget));
     scrollTo(finalTarget);
     locked = true;
