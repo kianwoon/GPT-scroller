@@ -23,6 +23,7 @@ let lastProgrammaticScroll = 0;
 let scrollHandler = null;
 let wheelHandler = null;
 let lastScrollTop = 0;
+let resizeTimeout = null;
 
 const SEND_GAP_PX = 120; // unused, kept for reference
 const WAIT_FOR_MSG_MS = 6000;
@@ -391,6 +392,61 @@ setInterval(() => {
     });
   }
 }, 500);
+
+// ── Window resize handling ────────────────────────────────────────────────────
+// When the viewport resizes, scrollBox.clientHeight and element positions change.
+// If a hold is active, lockedTarget becomes stale — recalculate from the last user
+// message's current position and the new viewport dimensions.
+function handleResize() {
+  // Debounce — layout reflows can fire many resize events in quick succession
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    // Invalidate scrollBox cache — resize may cause ChatGPT to re-render
+    // with different overflow styles, breaking our cached reference.
+    if (cachedScrollBox && cachedScrollBox.isConnected) {
+      const ov = window.getComputedStyle(cachedScrollBox).overflowY;
+      if (!['auto', 'scroll', 'overlay'].includes(ov)) {
+        log('Resize: scrollBox lost overflow, clearing cache');
+        cachedScrollBox = null;
+        const fresh = findScrollBox();
+        if (fresh && fresh !== scrollBox) {
+          scrollBox = fresh;
+          log('Resize: rebound to new scrollBox');
+        }
+      }
+    } else if (cachedScrollBox) {
+      log('Resize: scrollBox disconnected, clearing cache');
+      cachedScrollBox = null;
+    }
+
+    // If a hold is active, recalculate the target for the new viewport size.
+    // This keeps the last user message at the same visual position (70% from top).
+    if (holdId && scrollBox) {
+      const msg = getLastUserMessage();
+      if (msg && scrollBox.isConnected) {
+        const msgContentOffset = getMsgContentOffset(msg);
+        const newTarget = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * 0.70;
+        const max = Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
+
+        // Same guard as positionAfterSend: don't hold if content fits viewport
+        if (newTarget > 0) {
+          const clamped = Math.min(Math.max(0, newTarget), max);
+          lockedTarget = clamped;
+          log(`Resize: recalculated hold ${Math.round(clamped)} (was ${Math.round(lockedTarget)})`);
+        } else {
+          // Content now fits in viewport after resize — release hold
+          stopHold();
+          log('Resize: content fits viewport, hold released');
+        }
+      } else {
+        stopHold();
+        log('Resize: no message or scrollBox gone, hold released');
+      }
+    }
+  }, 150);
+}
+
+window.addEventListener('resize', handleResize);
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {

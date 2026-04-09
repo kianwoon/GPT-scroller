@@ -17,6 +17,7 @@ let lastProgrammaticScroll = 0; // timestamp of last extension-driven scroll
 let logCount = 0;
 let scrollHandler = null;
 let wheelHandler = null;
+let resizeTimeout = null;
 
 function log(...a) { console.log(`[GrokScrollFix ${logCount++}]`, ...a); }
 
@@ -177,6 +178,56 @@ setInterval(() => {
         }));
     });
 }, 100); // Check URL every 100ms for faster response
+
+// ── Window resize handling ────────────────────────────────────────────────────
+function handleResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        if (cachedScrollBox && cachedScrollBox.isConnected) {
+            const ov = window.getComputedStyle(cachedScrollBox).overflowY;
+            if (!['auto', 'scroll', 'overlay'].includes(ov)) {
+                log('Resize: scrollBox lost overflow, clearing cache');
+                cachedScrollBox = null;
+                const fresh = findScrollBox();
+                if (fresh && fresh !== scrollBox) {
+                    scrollBox = fresh;
+                    log('Resize: rebound to new scrollBox');
+                }
+            }
+        } else if (cachedScrollBox) {
+            log('Resize: scrollBox disconnected, clearing cache');
+            cachedScrollBox = null;
+        }
+
+        if (holdId && scrollBox) {
+            const turns = document.querySelectorAll('[id^="response-"]');
+            if (turns.length && scrollBox.isConnected) {
+                const lastTurn = turns[turns.length - 1];
+                const msg = lastTurn.querySelector('.message-bubble');
+                if (msg) {
+                    const offset = msg.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
+                    const newTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
+                    const max = Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
+
+                    if (newTarget > 0) {
+                        lockedTarget = Math.min(Math.max(0, newTarget), max);
+                        log(`Resize: recalculated hold ${Math.round(lockedTarget)}`);
+                    } else {
+                        stopHold();
+                        log('Resize: content fits viewport, hold released');
+                    }
+                } else {
+                    stopHold();
+                }
+            } else {
+                stopHold();
+                log('Resize: no message or scrollBox gone, hold released');
+            }
+        }
+    }, 150);
+}
+
+window.addEventListener('resize', handleResize);
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 waitForScrollBox(el => {

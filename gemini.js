@@ -145,6 +145,54 @@ function positionNewMessage() {
 // ── Manual scroll detection (upward = unlock) ─────────────────────────────────
 let scrollHandler = null;
 let wheelHandler = null;
+let resizeTimeout = null;
+
+function handleResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        // Verify scrollBox cache is still scrollable after resize
+        if (cachedScrollBox && cachedScrollBox.isConnected) {
+            const ov = window.getComputedStyle(cachedScrollBox).overflowY;
+            if (!['auto', 'scroll', 'overlay'].includes(ov)) {
+                log('Resize: scrollBox lost overflow, clearing cache');
+                cachedScrollBox = null;
+                const fresh = findScrollBox();
+                if (fresh && fresh !== scrollBox) {
+                    scrollBox = fresh;
+                    log('Resize: rebound to new scrollBox');
+                }
+            }
+        } else if (cachedScrollBox) {
+            log('Resize: scrollBox disconnected, clearing cache');
+            cachedScrollBox = null;
+        }
+
+        // Recalculate hold target for new viewport dimensions
+        if (holdId && scrollBox) {
+            const msgs = document.querySelectorAll('user-query');
+            if (msgs.length && scrollBox.isConnected) {
+                const msg = msgs[msgs.length - 1];
+                const offset = msg.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
+                const newTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
+                const max = Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
+
+                if (newTarget > 0) {
+                    lockedTarget = Math.min(Math.max(0, newTarget), max);
+                    log(`Resize: recalculated hold ${Math.round(lockedTarget)}`);
+                } else {
+                    stopHold();
+                    log('Resize: content fits viewport, hold released');
+                }
+            } else {
+                stopHold();
+                log('Resize: no message or scrollBox gone, hold released');
+            }
+        }
+    }, 150);
+}
+
+window.addEventListener('resize', handleResize);
+
 function setupScrollDetection() {
     // Remove previous listeners to prevent stacking on SPA navigation
     if (scrollHandler && scrollBox) scrollBox.removeEventListener('scroll', scrollHandler);
