@@ -7,7 +7,18 @@ window.__chatpinLoaded_gemini = true;
 // 2. On send: position new message 30% above bottom
 // 3. Lock scroll after that — user manual scroll (upward) unlocks it
 
-const VIEWPORT_RATIO = 0.70; // msg top at 70% down = 30% above input box
+let VIEWPORT_RATIO = 0.70; // msg top at 70% down = 30% above input box
+
+// ── Pin Height from Storage ─────────────────────────────────────────────
+function applyPinHeight(percent) {
+  VIEWPORT_RATIO = 1 - percent / 100;
+}
+chrome.storage.local.get('pinHeight', (r) => {
+  applyPinHeight(r.pinHeight ?? 30);
+});
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'chatpin-height-update') applyPinHeight(msg.pinHeight);
+});
 
 let scrollBox = null;
 let cachedScrollBox = null;

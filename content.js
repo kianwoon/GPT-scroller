@@ -13,6 +13,22 @@ let cachedScrollBox = null;
 let awaitingSendPosition = false;
 let streamingShiftApplied = false;
 let currentCycleLocked = false;
+let viewportRatio = 0.70; // 0.70 = msg at 70% down = 30% above input
+
+// ── Pin Height from Storage ─────────────────────────────────────────────────
+// Set CSS variable for the spacer height (ChatGPT uses CSS ::after)
+function applyPinHeight(percent) {
+  viewportRatio = 1 - percent / 100;
+  document.documentElement.style.setProperty('--chatpin-height', percent + 'vh');
+}
+// Load saved preference
+chrome.storage.local.get('pinHeight', (r) => {
+  applyPinHeight(r.pinHeight ?? 30);
+});
+// Listen for live updates from popup
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'chatpin-height-update') applyPinHeight(msg.pinHeight);
+});
 let stopObserver = null;
 let userMsgObserver = null;
 let inputAttachObserver = null;
@@ -189,7 +205,7 @@ function positionAfterSend() {
   }
 
   // Desired: new message bottom at 70% viewport (30% above input box)
-  const target = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * 0.70;
+  const target = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * viewportRatio;
 
   // If target < 0, content fits in viewport — don't scroll or hold.
   // Let the natural layout handle it. The hold will start when the
@@ -425,7 +441,7 @@ function handleResize() {
       const msg = getLastUserMessage();
       if (msg && scrollBox.isConnected) {
         const msgContentOffset = getMsgContentOffset(msg);
-        const newTarget = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * 0.70;
+        const newTarget = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * viewportRatio;
         const max = Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
 
         // Same guard as positionAfterSend: don't hold if content fits viewport

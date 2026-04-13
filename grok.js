@@ -7,7 +7,18 @@ window.__chatpinLoaded_grok = true;
 // 2. Hold that position with interval while streaming
 // 3. User scrolling up stops the hold
 
-const VIEWPORT_RATIO = 0.70;
+let VIEWPORT_RATIO = 0.70;
+
+// ── Pin Height from Storage ─────────────────────────────────────────────
+function applyPinHeight(percent) {
+  VIEWPORT_RATIO = 1 - percent / 100;
+}
+chrome.storage.local.get('pinHeight', (r) => {
+  applyPinHeight(r.pinHeight ?? 30);
+});
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'chatpin-height-update') applyPinHeight(msg.pinHeight);
+});
 let scrollBox = null;
 let cachedScrollBox = null;
 let locked = false;

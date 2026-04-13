@@ -4,15 +4,15 @@
     overflow-anchor: none !important;
 }
 
-/* This adds the 30% gap at the very end of the chat stream */
+/* This adds the pin-height gap at the very end of the chat stream */
 /* NOTE: Selectors below are based on ChatGPT's class names as of early 2026.
    If the extension stops adding bottom padding, these selectors may need updating
    to match any class name changes ChatGPT introduces. */
 [class*="react-scroll-to-bottom"]>div>div:last-child::after {
     content: "";
     display: block;
-    height: 30vh !important;
-    /* 30% of the screen height */
+    height: var(--chatpin-height, 30vh) !important;
+    /* Updated via JS based on user preference */
     width: 100%;
 }
 
