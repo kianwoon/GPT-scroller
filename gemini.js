@@ -12,6 +12,27 @@ let VIEWPORT_RATIO = 0.70; // msg top at 70% down = 30% above input box
 // ── Pin Height from Storage ─────────────────────────────────────────────
 function applyPinHeight(percent) {
   VIEWPORT_RATIO = 1 - percent / 100;
+  // Immediately reposition with new ratio
+  if (scrollBox && scrollBox.isConnected) {
+    const msgs = document.querySelectorAll('user-query');
+    if (msgs.length) {
+      const msg = msgs[msgs.length - 1];
+      const offset = msg.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
+      const target = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
+      const max = Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
+      if (target > 0) {
+        const clamped = Math.min(Math.max(0, target), max);
+        lockedTarget = clamped;
+        scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
+        scrollBox.scrollTop = clamped;
+        scrollBox.style.removeProperty('scroll-behavior');
+        lastProgrammaticScroll = performance.now();
+        lastTop = clamped;
+        if (!holdId) startHold(clamped);
+        log(`applyPinHeight: repositioned to ${Math.round(clamped)} (${percent}%)`);
+      }
+    }
+  }
 }
 chrome.storage.local.get('pinHeight', (r) => {
   applyPinHeight(r.pinHeight ?? 30);
@@ -100,6 +121,17 @@ function startHold(target) {
     lockedTarget = target;
     holdId = setInterval(() => {
         if (!scrollBox) return;
+        // Always recalculate target with fresh viewport dimensions
+        const msgs = document.querySelectorAll('user-query');
+        if (msgs.length) {
+            const msg = msgs[msgs.length - 1];
+            const offset = msg.getBoundingClientRect().top - scrollBox.getBoundingClientRect().top + scrollBox.scrollTop;
+            const freshTarget = offset + msg.offsetHeight - scrollBox.clientHeight * VIEWPORT_RATIO;
+            const max = Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
+            if (freshTarget > 0) {
+                lockedTarget = Math.min(Math.max(0, freshTarget), max);
+            }
+        }
         if (Math.abs(scrollBox.scrollTop - lockedTarget) > 2) {
             scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
             scrollBox.scrollTop = lockedTarget;

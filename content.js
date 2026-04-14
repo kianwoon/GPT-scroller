@@ -20,6 +20,25 @@ let viewportRatio = 0.70; // 0.70 = msg at 70% down = 30% above input
 function applyPinHeight(percent) {
   viewportRatio = 1 - percent / 100;
   document.documentElement.style.setProperty('--chatpin-height', percent + 'vh');
+  // Immediately reposition with new ratio
+  if (scrollBox && scrollBox.isConnected) {
+    const msg = getLastUserMessage();
+    if (msg) {
+      const msgContentOffset = getMsgContentOffset(msg);
+      const target = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * viewportRatio;
+      const max = Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
+      if (target > 0) {
+        const clamped = Math.min(Math.max(0, target), max);
+        lockedTarget = clamped;
+        scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
+        scrollBox.scrollTop = clamped;
+        scrollBox.style.removeProperty('scroll-behavior');
+        lastProgrammaticScroll = performance.now();
+        if (!holdId) startHold(clamped);
+        log(`applyPinHeight: repositioned to ${Math.round(clamped)} (${percent}%)`);
+      }
+    }
+  }
 }
 // Load saved preference
 chrome.storage.local.get('pinHeight', (r) => {
@@ -159,6 +178,16 @@ function startHold(target) {
   lockedTarget = target;
   holdId = setInterval(() => {
     if (!scrollBox) return;
+    // Always recalculate target with fresh viewport dimensions
+    const msg = getLastUserMessage();
+    if (msg) {
+      const msgContentOffset = getMsgContentOffset(msg);
+      const freshTarget = msgContentOffset + msg.offsetHeight - scrollBox.clientHeight * viewportRatio;
+      const max = Math.max(0, scrollBox.scrollHeight - scrollBox.clientHeight);
+      if (freshTarget > 0) {
+        lockedTarget = Math.min(Math.max(0, freshTarget), max);
+      }
+    }
     if (Math.abs(scrollBox.scrollTop - lockedTarget) > 2) {
       scrollBox.style.setProperty('scroll-behavior', 'auto', 'important');
       scrollBox.scrollTop = lockedTarget;
